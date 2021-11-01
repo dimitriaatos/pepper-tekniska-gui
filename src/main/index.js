@@ -2,7 +2,7 @@
 
 import { app, BrowserWindow } from 'electron'
 import '../renderer/store'
-import './osc'
+import osc from './osc'
 
 /**
  * Set `__static` path to static files in production
@@ -32,6 +32,13 @@ function createWindow () {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+	osc(mainWindow)
+
+	if (process.env.WEBPACK_DEV_SERVER_URL) {
+    // Load the url of the dev server if in development mode
+    mainWindow.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
+    if (!process.env.IS_TEST) mainWindow.webContents.openDevTools()
+	}
 }
 
 app.on('ready', createWindow)

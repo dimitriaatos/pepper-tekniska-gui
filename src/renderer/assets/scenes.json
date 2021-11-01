@@ -1,0 +1,40 @@
+{
+	"scenes": [
+		{
+			"id": 0,
+			"options": 3,
+			"text": {
+				"se": "På köpcentret",
+				"en": "In the shopping center",
+				"emoji": "🛍"
+			}
+		},
+		{
+			"id": 1,
+			"options": 3,
+			"text": {
+				"se": "På restaurangen",
+				"en": "In the restaurant",
+				"emoji": "🍲"
+			}
+		}
+	],
+	"questions": [
+		{
+			"se": "Vilket ljud förmedlar avsikten bäst?",
+			"en": "Which sound is the best to convey the intention?"
+		},
+		{
+			"se": "Vilket ljud förmedlar känslan bäst?",
+			"en": "Which sound is the best to express the emotion?"
+		},
+		{
+			"se": "Vilket ljud passar roboten bäst?",
+			"en": "Which sound is the most suitable for the robot?"
+		},
+		{
+			"se": "Vilket ljud tycker du bäst om?",
+			"en": "Which sound do you like the most?"
+		}
+	]
+}

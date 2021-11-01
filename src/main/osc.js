@@ -1,28 +1,67 @@
 import { Client, Server } from 'node-osc/dist/lib'
 const fs = require('fs')
-const path = require('path')
+const Video = require('./video').default
 
-const filepath = path.resolve('./data.json')
+const axios = require('axios').default
 
-const client = new Client('127.0.0.1', 8000)
+const video = new Video()
 
-const oscServer = new Server(3333, '127.0.0.1', () => {
-  console.log('OSC Server is listening');
-});
+const osc = (win) => {
 
-oscServer.on('message', (msg) => {
-	console.log(msg)
-});
+	const filepath = 'data.json'
+	
 
-const { ipcMain } = require('electron')
+	const remoteSave = (data) => {
+		try {
+			axios.post('https://idgenerator.xyz/pepper-data', data || JSON.parse(fs.readFileSync(filepath, 'utf8')))
+		} catch (error) {
+			console.log(error)
+		}
+	}
 
-ipcMain.on('save', (event, choices) => {
-	let data = JSON.parse(fs.readFileSync(filepath, 'utf8') || [])
-	data.push(choices)
-	fs.writeFileSync(filepath, JSON.stringify(data))
-})
+	// fs.writeFileSync('data.json', '{"los": "nai"}')
+	video.init()
 
-ipcMain.on('play', (event, {id, index, playpause}) => {
-	client.send(`/play/${id}/${index}`, playpause, () => {
+	const client = new Client('192.168.1.111', 3001)
+	// const client = new Client('127.0.0.1', 3001)
+
+	const oscServer = new Server(3003, '127.0.0.1', () => {
+		console.log('OSC Server is listening');
+	});
+
+	oscServer.on('/pepperstop', () => {
+		win.webContents.send('stop', true)
+		video.stop()
+	});
+
+	const { ipcMain } = require('electron')
+
+	ipcMain.on('save', (event, id, data) => {
+		let savedData = JSON.parse(fs.readFileSync(filepath, 'utf8') || "{}")
+		savedData[id] = data
+		fs.writeFileSync(filepath, JSON.stringify(savedData))
+		remoteSave(savedData)
 	})
-})
+
+	ipcMain.on('play', (event, {scene, move, sound}) => {
+		// client.send(`/pepper/${scene}/${move}/${sound}`, 'a', () => {
+		// })
+		video.play(scene)
+		const fixed = [scene+1, move+1, sound+1]
+		client.send(`/pepper`, fixed, () => {
+		})
+		setTimeout(() => {
+			event.sender.send('stop', true)
+			video.stop()
+		}, 100)
+	})
+
+	ipcMain.on('load', (event, id) => {
+		let data = JSON.parse(fs.readFileSync(filepath, 'utf8'))
+		event.returnValue = data[id] || false
+	})
+
+	setInterval(remoteSave, 5*60*1000)
+}
+
+export default osc

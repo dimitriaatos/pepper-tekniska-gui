@@ -26,7 +26,7 @@
 </script>
 
 <style>
-@import url("https://fonts.googleapis.com/css?family=Source+Sans+Pro");
+/* @import url("https://fonts.googleapis.com/css?family=Source+Sans+Pro"); */
 
 * {
   box-sizing: border-box;
@@ -39,14 +39,10 @@ body {
 }
 
 #wrapper {
-  background: radial-gradient(
-    ellipse at top left,
-    rgba(255, 255, 255, 1) 40%,
-    rgba(229, 229, 229, 0.9) 100%
-  );
-  height: 100vh;
-  padding: 60px 80px;
-  width: 100vw;
+  background-color: white;
+  min-height: 100vh;
+  padding: 3vh 3vw;
+  width: 100%;
 }
 
 main {

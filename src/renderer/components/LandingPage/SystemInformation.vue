@@ -235,7 +235,7 @@ export default {
 				scenes: arrayShuffle(this.arrayOfLength(num.scenes)),
 				moves: this.arrayOfLength(num.moves),
 				sounds: arrayShuffle(this.arrayOfLength(num.sounds)),
-				page: 'prompt',
+				page: 'id',
 				tried: new Array(num.sounds).fill(0),
 				playing: false,
 				lastTriedAll: false
@@ -274,7 +274,7 @@ export default {
 			if (this.choices == this.progress) {
 				this.page = 'end'
 			}
-			if (this.progress == 1) {
+			if (this.progress == this.number.moves) {
 				this.page = 'prompt'
 			}
 			this.index.scene = this.number.moves == this.index.move + 1 ? this.index.scene + 1 : this.index.scene

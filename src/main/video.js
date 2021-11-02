@@ -16,6 +16,7 @@ class Video {
 		await this.vlc.setRepeating(true)
 		await this.vlc.setFullscreen(true)
 		await this.vlc.setVolume(50)
+		await this.stop()
 		return this
 	}
 

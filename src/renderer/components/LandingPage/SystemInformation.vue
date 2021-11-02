@@ -11,12 +11,19 @@
 				class="idInput"
 				type="text"
 				name="id"
+				maxlength="6"
+				pattern="([A-C]|X)[0-9]-[A-Z]\d{2}"
 				placeholder="ID"
 				:value="id"
 				@input="setID"
 				@change="setID"
 			>
-			<Keyboard class="keyboard" :input="id" @onChange="onChange"/>
+			<div class="consentButtons">
+				<button @click="writeConsent('X')">X</button>
+				<button @click="writeConsent('A')">A</button>
+				<button @click="writeConsent('B')">B</button>
+			</div>
+			<Keyboard class="keyboard" :input="id" @onChange="onChange" @onKeyPress="onEnter"/>
 			<button
 			class="next playButton"
 			:class="{disabled: id.length != 6}"
@@ -68,8 +75,8 @@
 						>{{choiceButtonIndex + 1}}</button>
 						<button
 							class="choiceButton cantChoose"
-							:class="{selected: currentAnswers[questionIndex] == 'no answer'}"
-							@click="choose(questionIndex, 'no answer')"
+							:class="{selected: currentAnswers[questionIndex] == 'no difference'}"
+							@click="choose(questionIndex, 'no difference')"
 						><b>Ingen skillnad</b><br>No difference</button>
 					</div>
 				</div>
@@ -116,14 +123,16 @@ const initAnswers = (number, short) => {
 }
 
 function safeSplice(array, start, deleteCount, ...replace) {
-  const removed = array.splice(start, deleteCount, ...replace)
+	const newArray = [...array]
+  const removed = newArray.splice(start, deleteCount, ...replace)
   return { 
-    array: array,
+    array: newArray,
     removed: removed,
   }
 } 
 
 const initNumber = {
+	// these nubers will change once a short or a long questionary is chosen
 	scenes: sceneData.length,
 	moves: 3,
 	sounds: 3,
@@ -137,7 +146,8 @@ const setNumbers = (short) => {
 	if (short) {
 		num = {...num, questions: 2, moves: 1}
 	} else {
-		num.questions = {...num, questions: 4, moves: 2}
+		// replace the number of moves
+		num = {...num, questions: 4, moves: 3}
 	}
 
 	return num
@@ -160,7 +170,6 @@ export default {
 		allAnswered(){
 			let res = true
 			for (let i = 0; i < this.number.questions; i++) {
-				console.log(this.currentAnswers, this.currentAnswers[i])
 				if (this.currentAnswers[i] == -1) {
 					res = false
 				}
@@ -174,7 +183,7 @@ export default {
 			return this.answers
 				.scenes[this.scenes[this.index.scene]]
 				.moves[this.index.move]
-				.questions.map((e) => e != 'no answer' ? this.sounds.indexOf(e) : 'no answer' || -1)
+				.questions.map((e) => e != 'no difference' ? this.sounds.indexOf(e) : 'no difference' || -1)
 		},
 		triedAll(){
 			if (this.playing) {
@@ -192,6 +201,9 @@ export default {
 				this.index.scene = Math.floor((newProgress - 1) / this.number.moves)
 			}
 		},
+		sceneChange(){
+			return this.index.scene
+		},
 		choices() {
 			return this.number.scenes * this.number.moves
 		}
@@ -199,6 +211,9 @@ export default {
 	watch: {
 		triedAll(val) {
 			this.lastTriedAll = val
+		},
+		sceneChange(val){
+			this.video(val)
 		}
 	},
 	mounted(){
@@ -208,11 +223,18 @@ export default {
 		})
 	},
 	methods: {
+		onEnter(e){
+			if (e == '{enter}') this.start()
+		},
+		video(){
+			// ipcRenderer.sendSync('video', scene)
+		},
+		writeConsent(letter){
+			const day = new Date().getDay()
+			this.id = letter+day+'-'+this.id.slice(3, this.id.length)
+		},
 		setShort(short) {
-			this.answers.short = short
-			this.number = setNumbers(this.answers.short)
-
-			Object.assign(this, this.reset(this.number, short))
+			Object.assign(this, this.reset(short))
 			this.page = 'questions'
 		},
 		prompt(state) {
@@ -222,7 +244,8 @@ export default {
 				this.page = 'end'
 			}
 		},
-		reset(num, short){
+		reset(short){
+			const num = setNumbers(short)
 			return {
 				answers: initAnswers(num, short),
 
@@ -233,7 +256,7 @@ export default {
 					sound: -1,
 				},
 				scenes: arrayShuffle(this.arrayOfLength(num.scenes)),
-				moves: this.arrayOfLength(num.moves),
+				moves: this.arrayOfLength(num.moves), // replace this with a array to choose specific moves
 				sounds: arrayShuffle(this.arrayOfLength(num.sounds)),
 				page: 'id',
 				tried: new Array(num.sounds).fill(0),
@@ -242,16 +265,19 @@ export default {
 			}
 		},
 		start(){
-			const savedData = ipcRenderer.sendSync('load', this.id)
-			if (savedData) {
-				Object.assign(this, this.reset(setNumbers(savedData.answers.short), savedData.answers.short))
-				this.answers = savedData.answers
-				this.progress = savedData.metadata.progress
-				this.tried = savedData.metadata.tried
-				Object.assign(this, savedData.metadata.order)
-				this.page = 'questions'
-			} else {
-				this.page = 'longOrShort'
+			if (this.id.length == 6) {
+				const savedData = ipcRenderer.sendSync('load', this.id)
+				if (savedData) {
+					Object.assign(this, this.reset(savedData.answers.short))
+					this.answers = savedData.answers
+					this.progress = savedData.metadata.progress
+					this.tried = savedData.metadata.tried
+					Object.assign(this, savedData.metadata.order)
+					if (this.progress > this.choices) this.progress = this.choices
+					this.page = 'questions'
+				} else {
+					this.page = 'longOrShort'
+				}
 			}
 		},
 		arrayOfLength(l){
@@ -287,7 +313,7 @@ export default {
 			this.answers
 				.scenes[this.scenes[this.index.scene]]
 				.moves[this.index.move]
-				.questions.splice(questionIndex, 1, soundIndex != 'no answer' ? this.sounds[soundIndex] : 'no answer')
+				.questions.splice(questionIndex, 1, soundIndex != 'no difference' ? this.sounds[soundIndex] : 'no difference')
 		},
 		close(){
 			this.page = 'id'
@@ -320,8 +346,9 @@ export default {
 	}
 
 	.displayID {
-		bottom: 0;
-		left: 0;
+		bottom: 1vmin;
+		left: 1vmin;
+		font-size: 4vmin;
 		padding: 1vmin;
 		position: fixed;
 	}
@@ -536,5 +563,20 @@ export default {
 
 	.length {
 		font-size: 3vmin;
+	}
+
+	.consentButtons {
+		display: flex;
+		justify-content: center;
+	}
+
+	.consentButtons button {
+		padding: 1vmin;
+		font-size: 5vmin;
+		color: black;
+		background-color: white;
+		border: solid 1px gray;
+		width: 10vmin;
+		height: 10vmin;
 	}
 </style>

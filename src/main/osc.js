@@ -50,10 +50,10 @@ const osc = (win) => {
 		const fixed = [scene, move, sound].map(e => e+1)
 		client.send(`/pepper`, fixed, () => {
 		})
-		setTimeout(() => {
-			event.sender.send('stop', true)
-			video.stop()
-		}, 400)
+		// setTimeout(() => {
+		// 	event.sender.send('stop', true)
+		// 	video.stop()
+		// }, 400)
 	})
 
 	ipcMain.on('load', (event, id) => {

@@ -45,7 +45,7 @@
 			</div>
 		</div>
 		<div v-else-if="page=='questions'" class="choose">
-			<h1><b>{{ sceneData[index.scene].text.se }}</b> <span class="progress">{{ progress }}/{{ choices }}</span><br>{{ sceneData[index.scene].text.en }}</h1>
+			<h1><b>{{ sceneData[scenes[index.scene]].text.se }}</b> <span class="progress">{{ progress }}/{{ choices }}</span><br>{{ sceneData[scenes[index.scene]].text.en }}</h1>
 			<div class="playButtons">
 				<button
 					v-for="(buttonIndex) in arrayOfLength(number.sounds)"

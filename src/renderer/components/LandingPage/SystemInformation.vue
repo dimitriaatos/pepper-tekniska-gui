@@ -4,7 +4,7 @@
 		v-if="page!='id'"
 		class="close"
 		:class="{disabled: playing}"
-		@click="close"
+		@touchend="close"
 	>x</button>
 		<div v-if="page=='id'">
 			<input
@@ -19,25 +19,25 @@
 				@change="setID"
 			>
 			<div class="consentButtons">
-				<button @click="writeConsent('X')">X</button>
-				<button @click="writeConsent('A')">A</button>
-				<button @click="writeConsent('B')">B</button>
+				<button @touchend="writeConsent('X')">X</button>
+				<button @touchend="writeConsent('A')">A</button>
+				<button @touchend="writeConsent('B')">B</button>
 			</div>
 			<Keyboard class="keyboard" :input="id" @onChange="onChange" @onKeyPress="onEnter"/>
 			<button
 			class="next playButton"
 			:class="{disabled: id.length != 6}"
-			@click="start()"
+			@touchend="start()"
 			><span class="arrow">→</span></button>
 		</div>
 		<div v-else-if="page=='longOrShort'" class="longOrShort">
 			<div>
-				<button @click="setShort(true)">
+				<button @touchend="setShort(true)">
 					<b>Kort</b>
 					<div>Short</div>
 					<div class="length">1 min</div>
 				</button>
-				<button @click="setShort(false)">
+				<button @touchend="setShort(false)">
 					<b>Lång</b>
 					<div>Long</div>
 					<div class="length">3 min</div>
@@ -52,7 +52,7 @@
 					:key="buttonIndex"
 					class="playButton"
 					:class="{selected: buttonIndex == index.sound && playing, disabled: playing}"
-					@click="play(buttonIndex)"
+					@touchend="play(buttonIndex)"
 				>{{buttonIndex + 1}} <span class="tick" :class="{ticked: tried[buttonIndex] && !playing}">☑️</span></button>
 			</div>
 			<div
@@ -71,12 +71,12 @@
 							:key="choiceButtonIndex"
 							class="choiceButton"
 							:class="{selected: choiceButtonIndex == currentAnswers[questionIndex]}"
-							@click="choose(questionIndex, choiceButtonIndex)"
+							@touchend="choose(questionIndex, choiceButtonIndex)"
 						>{{choiceButtonIndex + 1}}</button>
 						<button
 							class="choiceButton cantChoose"
 							:class="{selected: currentAnswers[questionIndex] == 'no difference'}"
-							@click="choose(questionIndex, 'no difference')"
+							@touchend="choose(questionIndex, 'no difference')"
 						><b>Ingen skillnad</b><br>No difference</button>
 					</div>
 				</div>
@@ -84,15 +84,15 @@
 			<button
 				class="next"
 				:class="{disabled: playing || !allAnswered }"
-				@click="next"
+				@touchend="next"
 			><span class="arrow">→</span></button>
 			<div class="displayID">{{ id }}</div>
 		</div>
 		<div v-else-if="page=='prompt'" class="prompt">
 			<!-- <h2>Do you want to keep going?</h2> -->
 			<div class="buttons">
-				<button @click="prompt(false)"><b>Avsluta</b><br>Finish</button>
-				<button @click="prompt(true)"><b>Fortsätt till nästa scen</b><br>Go to the next scene</button>
+				<button @touchend="prompt(false)"><b>Avsluta</b><br>Finish</button>
+				<button @touchend="prompt(true)"><b>Fortsätt till nästa scen</b><br>Go to the next scene</button>
 			</div>
 		</div>
 		<div v-else-if="page=='end'" class="end">
@@ -292,7 +292,7 @@ export default {
 		play(index){
 			this.index.sound = index
 			this.tried = this.tried.map((e, i) => this.index.sound == i ? 1 : e)
-			ipcRenderer.send('play', {scene: this.scenes[this.index.scene], move: this.index.move, sound: this.sounds[this.index.sound]})
+			ipcRenderer.send('play', {scene: this.scenes[this.index.scene], move: (this.answers.short ? 3 : this.index.move), sound: this.sounds[this.index.sound]})
 			this.playing = true
 			
 		},

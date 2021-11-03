@@ -19,9 +19,10 @@
 				@change="setID"
 			>
 			<div class="consentButtons">
-				<button @touchend="writeConsent('X')">X</button>
-				<button @touchend="writeConsent('A')">A</button>
-				<button @touchend="writeConsent('B')">B</button>
+				<button @touchend="writeConsent('K')">{{consentButton('K')}}</button>
+				<button @touchend="writeConsent('X')">{{consentButton('X')}}</button>
+				<button @touchend="writeConsent('A')">{{consentButton('A')}}</button>
+				<button @touchend="writeConsent('B')">{{consentButton('B')}}</button>
 			</div>
 			<Keyboard class="keyboard" :input="id" @onChange="onChange" @onKeyPress="onEnter"/>
 			<button
@@ -150,6 +151,8 @@ const setNumbers = (short) => {
 		num = {...num, questions: 4, moves: 3}
 	}
 
+	
+
 	return num
 }
 
@@ -223,6 +226,9 @@ export default {
 		})
 	},
 	methods: {
+		consentButton(consent){
+			return `${consent}${new Date().getDay()}-`
+		},
 		onEnter(e){
 			if (e == '{enter}') this.start()
 		},
@@ -231,7 +237,12 @@ export default {
 		},
 		writeConsent(letter){
 			const day = new Date().getDay()
-			this.id = letter+day+'-'+this.id.slice(3, this.id.length)
+			if (letter == 'K') {
+				this.id = letter+day+'-'+ipcRenderer.sendSync('kid')
+			}
+			else {
+				this.id = letter+day+'-'+this.id.slice(3, this.id.length)
+			}
 		},
 		setShort(short) {
 			Object.assign(this, this.reset(short))
@@ -246,6 +257,7 @@ export default {
 		},
 		reset(short){
 			const num = setNumbers(short)
+			const moves = short ? [Math.floor(Math.random()*4)] : this.arrayOfLength(num.moves)
 			return {
 				answers: initAnswers(num, short),
 
@@ -256,7 +268,7 @@ export default {
 					sound: -1,
 				},
 				scenes: arrayShuffle(this.arrayOfLength(num.scenes)),
-				moves: this.arrayOfLength(num.moves), // replace this with a array to choose specific moves
+				moves, // replace this with a array to choose specific moves
 				sounds: arrayShuffle(this.arrayOfLength(num.sounds)),
 				page: 'id',
 				tried: new Array(num.sounds).fill(0),
@@ -292,18 +304,21 @@ export default {
 		play(index){
 			this.index.sound = index
 			this.tried = this.tried.map((e, i) => this.index.sound == i ? 1 : e)
-			ipcRenderer.send('play', {scene: this.scenes[this.index.scene], move: (this.answers.short ? 3 : this.index.move), sound: this.sounds[this.index.sound]})
+			ipcRenderer.send('play', {scene: this.scenes[this.index.scene], move: this.moves[this.index.move], sound: this.sounds[this.index.sound]})
 			this.playing = true
 			
 		},
 		next(){
 			if (this.choices == this.progress) {
+				ipcRenderer.send('stop')
 				this.page = 'end'
 			}
 			if (this.progress == this.number.moves) {
 				this.page = 'prompt'
 			}
+			const prevScene = this.index.scene
 			this.index.scene = this.number.moves == this.index.move + 1 ? this.index.scene + 1 : this.index.scene
+			prevScene != this.index.scene && ipcRenderer.send('stop')
 			this.index.move = (this.index.move + 1) % this.number.moves
 			this.tried = new Array(this.number.sounds).fill(0)
 				this.sounds = arrayShuffle(this.arrayOfLength(this.number.sounds))
@@ -316,6 +331,7 @@ export default {
 				.questions.splice(questionIndex, 1, soundIndex != 'no difference' ? this.sounds[soundIndex] : 'no difference')
 		},
 		close(){
+			ipcRenderer.send('stop')
 			this.page = 'id'
 			ipcRenderer.send('save', 
 				this.id,

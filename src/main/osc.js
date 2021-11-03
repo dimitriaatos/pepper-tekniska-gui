@@ -31,7 +31,7 @@ const osc = (win) => {
 
 	oscServer.on('/pepperstop', () => {
 		win.webContents.send('stop', true)
-		video.stop()
+		// video.stop()
 	});
 
 	const { ipcMain } = require('electron')
@@ -48,17 +48,38 @@ const osc = (win) => {
 		// })
 		video.play(scene)
 		const fixed = [scene, move, sound].map(e => e+1)
+		console.log(fixed)
 		client.send(`/pepper`, fixed, () => {
 		})
 		// setTimeout(() => {
 		// 	event.sender.send('stop', true)
-		// 	video.stop()
+		// 	// video.stop()
 		// }, 400)
+	})
+
+	ipcMain.on('stop', () => {
+		video.stop()
 	})
 
 	ipcMain.on('load', (event, id) => {
 		let data = JSON.parse(fs.readFileSync(filepath, 'utf8'))
 		event.returnValue = data[id] || false
+	})
+
+	ipcMain.on('kid', (event) => {
+		const leadingZeros = (number, size) => {
+			let string = String(number)
+			while (string.length < (size || 2)) {string = '0' + string}
+			return string
+		}
+		const day = new Date().getDay()
+		const wrap = 100
+		const week = JSON.parse(fs.readFileSync('kidIncrement.json', 'utf8'))
+		week[day] = week[day] + 1
+		fs.writeFileSync('kidIncrement.json', JSON.stringify(week))
+		const letter = String.fromCharCode(Math.floor(week[day] / wrap)+65)
+		const number = week[day] % wrap
+		event.returnValue = letter+leadingZeros(number)
 	})
 
 	// setInterval(remoteSave, 5*60*1000)
